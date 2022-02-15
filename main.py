@@ -49,8 +49,8 @@ def post_user():
         INTO customers(customer_username, full_name, password)
         VALUES (?, ?, ?)
         """,
-        [user['username'], user['fullName'], hash(user['pwd'])] #TODO vet inte om hash fungerar här! Men checka att den gör det
-            ) #TODO om denna queryn crashar så kommer databasen ge error och kommer inte ge response.status = 400
+        [user['username'], user['fullName'], hash(user['pwd'])] 
+            ) #TODO, Issue "Fixa post error handeling", om denna queryn crashar så kommer databasen ge error och kommer inte ge response.status = 400
     c.execute(
         """
         SELECT customer_username
@@ -62,7 +62,7 @@ def post_user():
     if not found: 
         #print("did not work")
         response.status = 400 
-        return "Illegal..." #TODO ska inte vara illegal
+        return "Illegal..." #TODO, Issue: "Fixa post error handeling", ska inte vara illegal
     else:
         db.commit()
         #print("worked")
@@ -82,7 +82,7 @@ def post_movie():
         """,
         [movie['imdbKey'], movie['title'], movie['year']]
             )
-    #TODO borde bara crasha om det är duplicate keys, se till att den ger response.status = 400
+    #TODO, Issue: "Fixa post error handeling", borde bara crasha om det är duplicate keys, se till att den ger response.status = 400
     c.execute(
         """
         SELECT imdb_key
@@ -90,11 +90,11 @@ def post_movie():
         WHERE rowid = last_insert_rowid()
         """
     )
-    found = c.fetchone() #TODO Om den har crashat så kommer den ändå kanske ge nåt här
-    if not found: #Tittar inte om den har get error eller inte
+    found = c.fetchone() #TODO, Issue: "Fixa post error handeling", Om den har crashat så kommer den ändå kanske ge nåt här
+    if not found: #TODO, Issue: "Fixa post error handeling", Tittar inte om den har get error eller inte
         #print("did not work")
         response.status = 400
-        return "Illegal..."  #TODO borde inte vara illegal
+        return "Illegal..."  #TODO, Issue:"Fixa post error handeling",  borde inte returnera "illegal"
     else:
         db.commit()
         #print("worked")
@@ -106,7 +106,7 @@ def post_movie():
 def post_performance():
     screening = request.json
     c = db.cursor()
-    c.execute( #Just nu tillåter denna att man skickar in en theater/imdbKey som inte finns detta borde lösas
+    c.execute( #TODO, Issue: "Fixa post error handeling", Just nu tillåter denna att man skickar in en theater/imdbKey som inte finns detta borde lösas
         """
         INSERT
         INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
@@ -114,7 +114,7 @@ def post_performance():
         """,
         [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
             )
-    found = c.fetchone() #TODO Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
+    found = c.fetchone() #TODO, Issue:"Fixa post error handeling", Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
 
     c.execute(
         """
@@ -124,8 +124,8 @@ def post_performance():
         """
     )
     found = c.fetchone()
-    #TODO se till också så att denna error handeling faktiskt fungerar
-    if not found: #TODO Lägg till fler errors här beroende på om det var theater eller imdbkey som var fel
+    #TODO, Issue:"Fixa post error handeling", se till också så att denna error handeling faktiskt fungerar
+    if not found: #TODO, Issue: "Fixa post error handeling", Lägg till fler errors här beroende på om det var theater eller imdbkey som var fel
         #print("did not work")
         response.status = 400
         return "No such movie or theater"
@@ -189,7 +189,7 @@ def get_students(imdb_key):
     return {"data": found}
 
 @get('/performances')
-def get_performances(): #TODO denna ger inte remainingSeats, utan returnerar bara capacity, se till så att den gör det den faktiskt ska
+def get_performances(): #TODO, Issue:"RemainingSeats", denna ger inte remainingSeats, utan returnerar bara capacity, se till så att den gör det den faktiskt ska
     c = db.cursor()
     c.execute( 
         """
@@ -207,11 +207,11 @@ def get_performances(): #TODO denna ger inte remainingSeats, utan returnerar bar
     return {"data": found}
 
 @post('/tickets')
-def purchase_ticket(): #TODO fixa så att man kan köpa tickets!
+def purchase_ticket(): #TODO, Issue: "PurchaseTickets", fixa så att man kan köpa tickets!
     pass
  
 @get('/users/<username>/tickets')
-def get_user_tickets(username): #TODO Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
+def get_user_tickets(username): #TODO, Issue: "Se Users tickets", Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
     c = db.cursor()
     c.execute(
         """
