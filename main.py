@@ -112,7 +112,7 @@ def post_movie():
     c.execute(
         """
         INSERT
-        INTO movies(imdb_key, movie_title, production_year)
+        INTO movies(imdb_key, title, production_year)
         VALUES (?, ?, ?)
         """,
         [movie['imdbKey'], movie['title'], movie['year']]
@@ -174,33 +174,33 @@ def get_movies():
     c = db.cursor()
     c.execute(
         """
-        SELECT imdb_key, movie_title, production_year
+        SELECT imdb_key, title, production_year
         FROM movies
         """
             )
-    found = [{"imdbKey":imdb_key,"title": movie_title, "year":production_year} 
-            for imdb_key, movie_title, production_year in c]
+    found = [{"imdbKey":imdb_key,"title": title, "year":production_year} 
+            for imdb_key, title, production_year in c]
     response.status = 200
     return {"data": found}
 
 @get('/movies')
 def get_movie_search():
     query = """
-        SELECT   imdb_key, movie_title, production_year
+        SELECT   imdb_key, title, production_year
         FROM     movies
         WHERE    1 = 1
         """
     params = []
     if request.query.title:
-        query += " AND movie_title = ?"
+        query += " AND title = ?"
         params.append(unquote(request.query.title))
     if request.query.year:
         query += " AND production_year >= ?"
         params.append(request.query.year)
     c = db.cursor()
     c.execute(query, params)
-    found = [{"imdbKey":imdb_key,"title": movie_title, "year":production_year} 
-            for imdb_key, movie_title, production_year in c]
+    found = [{"imdbKey":imdb_key,"title": title, "year":production_year} 
+            for imdb_key, title, production_year in c]
     response.status = 200
     return {"data": found}
 
@@ -210,14 +210,14 @@ def get_students(imdb_key):
     c = db.cursor()
     c.execute(
           """
-          SELECT  imdb_key, movie_title, production_year
+          SELECT  imdb_key, title, production_year
           FROM    movies
           WHERE   imdb_key = ?
           """,
           [imdb_key]
       )
-    found = [{"imdbKey":imdb_key,"title": movie_title, "year":production_year} 
-            for imdb_key, movie_title, production_year in c]
+    found = [{"imdbKey":imdb_key,"title": title, "year":production_year} 
+            for imdb_key, title, production_year in c]
     response.status = 200
     return {"data": found}
 
@@ -226,7 +226,7 @@ def get_performances():
     c = db.cursor()
     c.execute(
         """
-        SELECT screening_id, screening_date, screening_time, movie_title, production_year, movie_theater_name, capacity
+        SELECT screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity
         FROM screenings
         JOIN movies
         USING (imdb_key)
@@ -234,8 +234,8 @@ def get_performances():
         USING (movie_theater_name)
         """
             )
-    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": movie_title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
-            for screening_id, screening_date, screening_time, movie_title, production_year, movie_theater_name, capacity in c]
+    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
+            for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity in c]
     response.status = 200
     return {"data": found}
 
@@ -250,8 +250,8 @@ def get_performances(username):
         USING (imdb_key)
         """
             )
-    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": movie_title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
-            for screening_id, screening_date, screening_time, movie_title, production_year, movie_theater_name, capacity in c]
+    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
+            for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity in c]
     response.status = 200
     return {"data": found}
 
