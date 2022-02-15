@@ -17,61 +17,26 @@ def ping():
 @post('/reset')
 def reset_database():
     c = db.cursor()
-    c.execute(
-        """
-        DELETE 
-        FROM customers;
-       """
-    
-    )
+    c.execute("DELETE FROM movie_theaters")
     db.commit()
-    c.execute(
-        """
-        DELETE 
-        FROM movies;
-        """
-    
-    )
+    c.execute("DELETE FROM movies")
     db.commit()
-
-    c.execute(
-        """
-        DELETE 
-        FROM movie_theaters;
-        """
-    
-    )
+    c.execute("DELETE FROM screenings")
     db.commit()
-
-    c.execute(
-        """
-        DELETE 
-        FROM screenings;
-        """
-    
-    )
+    c.execute("DELETE FROM tickets")
     db.commit()
-
-    c.execute(
-       """
-       DELETE 
-       FROM tickets;
-       """
-    
-    )
+    c.execute("DELETE FROM customers")
     db.commit()
-
-    c.execute(
-        """
-        INSERT
-        INTO movie_theaters(movie_theater_name, capacity)
-        VALUES ("Kino", 10),
-               ("Regal", 16),
-               ("Skandia", 100);
-        """
-    )
-    db.commit
-    response.status = 200
+    
+    c.execute("""
+    INSERT INTO movie_theaters(theater_name, capacity)
+    VALUES
+    ("Kino", 10),
+    ("Regal", 16),
+    ("Skandia", 100)
+    """) 
+    db.commit()
+    respons.status = 201
     return {"data": "reset"}
 
 @post('/users')
@@ -84,8 +49,8 @@ def post_user():
         INTO customers(customer_username, full_name, password)
         VALUES (?, ?, ?)
         """,
-        [user['username'], user['fullName'], hash(user['pwd'])]
-            )
+        [user['username'], user['fullName'], hash(user['pwd'])] #TODO vet inte om hash fungerar här! Men checka att den gör det
+            ) #TODO om denna queryn crashar så kommer databasen ge error och kommer inte ge response.status = 400
     c.execute(
         """
         SELECT customer_username
@@ -93,14 +58,14 @@ def post_user():
         WHERE rowid = last_insert_rowid()
         """
     )
-    found = c.fetchone()
-    if not found:
-        print("did not work")
-        response.status = 400
-        return "Illegal..."
+    found = c.fetchone() 
+    if not found: 
+        #print("did not work")
+        response.status = 400 
+        return "Illegal..." #TODO ska inte vara illegal
     else:
         db.commit()
-        print("worked")
+        #print("worked")
         response.status = 201
         username, = found
         return f"/users/{username}"
@@ -117,6 +82,7 @@ def post_movie():
         """,
         [movie['imdbKey'], movie['title'], movie['year']]
             )
+    #TODO borde bara crasha om det är duplicate keys, se till att den ger response.status = 400
     c.execute(
         """
         SELECT imdb_key
@@ -124,23 +90,23 @@ def post_movie():
         WHERE rowid = last_insert_rowid()
         """
     )
-    found = c.fetchone()
-    if not found:
-        print("did not work")
+    found = c.fetchone() #TODO Om den har crashat så kommer den ändå kanske ge nåt här
+    if not found: #Tittar inte om den har get error eller inte
+        #print("did not work")
         response.status = 400
-        return "Illegal..."
+        return "Illegal..."  #TODO borde inte vara illegal
     else:
         db.commit()
-        print("worked")
+        #print("worked")
         response.status = 201
         username, = found
         return f"/movies/{username}"
 
 @post('/performances')
-def post_movie():
+def post_performance():
     screening = request.json
     c = db.cursor()
-    c.execute(
+    c.execute( #Just nu tillåter denna att man skickar in en theater/imdbKey som inte finns detta borde lösas
         """
         INSERT
         INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
@@ -148,8 +114,8 @@ def post_movie():
         """,
         [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
             )
-    found = c.fetchone()
-    #print(found)
+    found = c.fetchone() #TODO Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
+
     c.execute(
         """
         SELECT screening_id
@@ -158,13 +124,14 @@ def post_movie():
         """
     )
     found = c.fetchone()
-    if not found:
-        print("did not work")
+    #TODO se till också så att denna error handeling faktiskt fungerar
+    if not found: #TODO Lägg till fler errors här beroende på om det var theater eller imdbkey som var fel
+        #print("did not work")
         response.status = 400
         return "No such movie or theater"
     else:
         db.commit()
-        print("worked")
+        #print("worked")
         response.status = 201
         username, = found
         return f"/performances/{username}"
@@ -222,9 +189,9 @@ def get_students(imdb_key):
     return {"data": found}
 
 @get('/performances')
-def get_performances():
+def get_performances(): #TODO denna ger inte remainingSeats, utan returnerar bara capacity, se till så att den gör det den faktiskt ska
     c = db.cursor()
-    c.execute(
+    c.execute( 
         """
         SELECT screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity
         FROM screenings
@@ -239,8 +206,12 @@ def get_performances():
     response.status = 200
     return {"data": found}
 
+@post('/tickets')
+def purchase_ticket(): #TODO fixa så att man kan köpa tickets!
+    pass
+ 
 @get('/users/<username>/tickets')
-def get_performances(username):
+def get_performances(username): #TODO Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
     c = db.cursor()
     c.execute(
         """
