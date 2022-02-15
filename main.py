@@ -211,7 +211,7 @@ def purchase_ticket(): #TODO fixa så att man kan köpa tickets!
     pass
  
 @get('/users/<username>/tickets')
-def get_performances(username): #TODO Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
+def get_user_tickets(username): #TODO Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
     c = db.cursor()
     c.execute(
         """
