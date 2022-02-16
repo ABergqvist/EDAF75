@@ -37,119 +37,74 @@ def reset_database():
     ("Skandia", 100)
     """) 
     db.commit()
-    respons.status = 201
+    response.status = 201
     return {"data": "reset"}
 
 @post('/users')
 def post_user():
     user = request.json 
     c = db.cursor()
-    c.execute(
-        """
-        INSERT
-        INTO customers(customer_username, full_name, password)
-        VALUES (?, ?, ?)
-        """,
-        [user['username'], user['fullName'], hash(user['pwd'])] 
-            ) #TODO, Issue "Fixa post error handeling", om denna queryn crashar så kommer databasen ge error och kommer inte ge response.status = 400
-    c.execute(
-        """
-        SELECT customer_username
-        FROM customers
-        WHERE rowid = last_insert_rowid()
-        """
-    )
-    found = c.fetchone() 
-    if not found: 
-        #print("did not work")
-        response.status = 400 
-        return "Illegal..." #TODO, Issue: "Fixa post error handeling", ska inte vara illegal
-    else:
+    try:
+        c.execute(
+            """
+            INSERT
+            INTO customers(customer_username, full_name, password)
+            VALUES (?, ?, ?)
+            """,
+            [user['username'], user['fullName'], hash(user['pwd'])] 
+                )
         db.commit()
-        #print("worked")
         response.status = 201
-        username, = found
-        return f"/users/{username}"
+        return f"/users/{user['username']}"
+        
+    except sqlite3.IntegrityError:
+        response.status = 400
+        return ""
+        
 
 @post('/movies')
 def post_movie():
-    movie = request.json
+    movie = request.json 
     c = db.cursor()
-    c.execute(
-        """
-        INSERT
-        INTO movies(imdb_key, title, production_year)
-        VALUES (?, ?, ?)
-        """,
-        [movie['imdbKey'], movie['title'], movie['year']]
-            )
-    #TODO, Issue: "Fixa post error handeling", borde bara crasha om det är duplicate keys, se till att den ger response.status = 400
-    c.execute(
-        """
-        SELECT imdb_key
-        FROM movies
-        WHERE rowid = last_insert_rowid()
-        """
-    )
-    found = c.fetchone() #TODO, Issue: "Fixa post error handeling", Om den har crashat så kommer den ändå kanske ge nåt här
-    if not found: #TODO, Issue: "Fixa post error handeling", Tittar inte om den har get error eller inte
-        #print("did not work")
-        response.status = 400
-        return "Illegal..."  #TODO, Issue:"Fixa post error handeling",  borde inte returnera "illegal"
-    else:
+    try:
+        c.execute(
+            """
+            INSERT
+            INTO movies(imdb_key, title, production_year)
+            VALUES (?, ?, ?)
+            """,
+            [movie['imdbKey'], movie['title'], movie['year']] 
+                )
         db.commit()
-        #print("worked")
         response.status = 201
-        username, = found
-        return f"/movies/{username}"
+        return f"/movies/{movie['imdbKey']}"
+        
+    except sqlite3.IntegrityError:
+        response.status = 400
+        return ""
+
 
 @post('/performances')
 def post_performance():
     screening = request.json
     c = db.cursor()
-    c.execute( #TODO, Issue: "Fixa post error handeling", Just nu tillåter denna att man skickar in en theater/imdbKey som inte finns detta borde lösas
-        """
-        INSERT
-        INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
-        VALUES (?, ?, ?, ?)
-        """,
-        [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
-            )
-#    found = c.fetchone() #TODO, Issue:"Fixa post error handeling", Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
-
-    c.execute(
-        """
-        SELECT screening_id
-        FROM screenings
-        WHERE rowid = last_insert_rowid()
-        """
-    )
-    found = c.fetchone()
-    #TODO, Issue:"Fixa post error handeling", se till också så att denna error handeling faktiskt fungerar
-    if not found: #TODO, Issue: "Fixa post error handeling", Lägg till fler errors här beroende på om det var theater eller imdbkey som var fel
-        #print("did not work")
+    try:
+        c.execute(
+            """
+            INSERT
+            INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
+            VALUES (?, ?, ?, ?)
+            RETURNING screening_id
+            """,
+            [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
+                )
+        screening_id = c.fetchone()        
+        response.status = 201
+        return f"/performances/{screening_id}"
+    
+    except sqlite3.IntegrityError:
         response.status = 400
         return "No such movie or theater"
-    else:
-        db.commit()
-        #print("worked")
-        response.status = 201
-        username, = found
-        return f"/performances/{username}"
-
-@get('/movies')
-def get_movies():
-    c = db.cursor()
-    c.execute(
-        """
-        SELECT imdb_key, title, production_year
-        FROM movies
-        """
-            )
-    found = [{"imdbKey":imdb_key,"title": title, "year":production_year} 
-            for imdb_key, title, production_year in c]
-    response.status = 200
-    return {"data": found}
 
 @get('/movies')
 def get_movie_search():
@@ -171,6 +126,8 @@ def get_movie_search():
             for imdb_key, title, production_year in c]
     response.status = 200
     return {"data": found}
+
+
 
 
 @get('/movies/<imdb_key>')
@@ -308,3 +265,121 @@ def get_user_tickets(username): #TODO, Issue: "Se Users tickets", Just nu funger
 
 
 run(host='localhost', port=7007)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+@post('/users')
+def post_user():
+    user = request.json 
+    c = db.cursor()
+    c.execute(
+        """
+        INSERT
+        INTO customers(customer_username, full_name, password)
+        VALUES (?, ?, ?)
+        """,
+        [user['username'], user['fullName'], hash(user['pwd'])] 
+            ) #TODO, Issue "Fixa post error handeling", om denna queryn crashar så kommer databasen ge error och kommer inte ge response.status = 400
+    c.execute(
+        """
+        SELECT customer_username
+        FROM customers
+        WHERE rowid = last_insert_rowid()
+        """
+    )
+    found = c.fetchone() 
+    if not found: 
+        #print("did not work")
+        response.status = 400 
+        return "Illegal..." #TODO, Issue: "Fixa post error handeling", ska inte vara illegal
+    else:
+        db.commit()
+        #print("worked")
+        response.status = 201
+        username, = found
+        return f"/users/{username}"
+'''
+
+
+
+
+'''
+@post('/movies')
+def post_movie():
+    movie = request.json
+    c = db.cursor()
+    c.execute(
+        """
+        INSERT
+        INTO movies(imdb_key, title, production_year)
+        VALUES (?, ?, ?)
+        """,
+        [movie['imdbKey'], movie['title'], movie['year']]
+            )
+    #TODO, Issue: "Fixa post error handeling", borde bara crasha om det är duplicate keys, se till att den ger response.status = 400
+    c.execute(
+        """
+        SELECT imdb_key
+        FROM movies
+        WHERE rowid = last_insert_rowid()
+        """
+    )
+    found = c.fetchone() #TODO, Issue: "Fixa post error handeling", Om den har crashat så kommer den ändå kanske ge nåt här
+    if not found: #TODO, Issue: "Fixa post error handeling", Tittar inte om den har get error eller inte
+        #print("did not work")
+        response.status = 400
+        return "Illegal..."  #TODO, Issue:"Fixa post error handeling",  borde inte returnera "illegal"
+    else:
+        db.commit()
+        #print("worked")
+        response.status = 201
+        username, = found
+        return f"/movies/{username}"
+'''
