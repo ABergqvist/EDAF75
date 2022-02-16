@@ -29,14 +29,14 @@ def reset_database():
     db.commit()
     
     c.execute("""
-    INSERT INTO movie_theaters(theater_name, capacity)
+    INSERT INTO movie_theaters(movie_theater_name, capacity)
     VALUES
     ("Kino", 10),
     ("Regal", 16),
     ("Skandia", 100)
     """) 
     db.commit()
-    respons.status = 201
+    response.status = 201
     return {"data": "reset"}
 
 @post('/users')
@@ -61,7 +61,6 @@ def post_user():
         return ""
         
 
-        
 @post('/movies')
 def post_movie():
     movie = request.json 
@@ -88,49 +87,23 @@ def post_movie():
 def post_performance():
     screening = request.json
     c = db.cursor()
-    c.execute( #TODO, Issue: "Fixa post error handeling", Just nu tillåter denna att man skickar in en theater/imdbKey som inte finns detta borde lösas
-        """
-        INSERT
-        INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
-        VALUES (?, ?, ?, ?)
-        """,
-        [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
-            )
-    found = c.fetchone() #TODO, Issue:"Fixa post error handeling", Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
-
-    c.execute(
-        """
-        SELECT screening_id
-        FROM screenings
-        WHERE rowid = last_insert_rowid()
-        """
-    )
-    found = c.fetchone()
-    #TODO, Issue:"Fixa post error handeling", se till också så att denna error handeling faktiskt fungerar
-    if not found: #TODO, Issue: "Fixa post error handeling", Lägg till fler errors här beroende på om det var theater eller imdbkey som var fel
-        #print("did not work")
+    try:
+        c.execute(
+            """
+            INSERT
+            INTO screenings(imdb_key, movie_theater_name, screening_date, screening_time)
+            VALUES (?, ?, ?, ?)
+            RETURNING screening_id
+            """,
+            [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
+                )
+        screening_id = c.fetchone()        
+        response.status = 201
+        return f"/performances/{screening_id}"
+    
+    except sqlite3.IntegrityError:
         response.status = 400
         return "No such movie or theater"
-    else:
-        db.commit()
-        #print("worked")
-        response.status = 201
-        username, = found
-        return f"/performances/{username}"
-
-@get('/movies')
-def get_movies():
-    c = db.cursor()
-    c.execute(
-        """
-        SELECT imdb_key, title, production_year
-        FROM movies
-        """
-            )
-    found = [{"imdbKey":imdb_key,"title": title, "year":production_year} 
-            for imdb_key, title, production_year in c]
-    response.status = 200
-    return {"data": found}
 
 @get('/movies')
 def get_movie_search():
@@ -152,6 +125,8 @@ def get_movie_search():
             for imdb_key, title, production_year in c]
     response.status = 200
     return {"data": found}
+
+
 
 
 @get('/movies/<imdb_key>')
