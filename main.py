@@ -29,7 +29,8 @@ def reset_database():
     db.commit()
     
     c.execute("""
-    INSERT INTO movie_theaters(theater_name, capacity)
+    INSERT
+    INTO movie_theaters(movie_theater_name, capacity)
     VALUES
     ("Kino", 10),
     ("Regal", 16),
@@ -114,7 +115,7 @@ def post_performance():
         """,
         [screening['imdbKey'], screening['theater'], screening['date'], screening['time']]
             )
-    found = c.fetchone() #TODO, Issue:"Fixa post error handeling", Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
+#    found = c.fetchone() #TODO, Issue:"Fixa post error handeling", Denna gör inte så mycket, hitta ett bra sätt att se om queryn gick igenom eller inte
 
     c.execute(
         """
@@ -189,26 +190,105 @@ def get_students(imdb_key):
     return {"data": found}
 
 @get('/performances')
-def get_performances(): #TODO, Issue:"RemainingSeats", denna ger inte remainingSeats, utan returnerar bara capacity, se till så att den gör det den faktiskt ska
+def get_performances():
     c = db.cursor()
     c.execute( 
         """
-        SELECT screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity
+        WITH ticket_amount(screening_id, ticket_number) AS (
+            SELECT screening_id, count() AS ticket_number
+            FROM tickets
+            GROUP BY screening_id
+        )
+        SELECT screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity, coalesce(ticket_number, 0) AS number_ticket
         FROM screenings
         JOIN movies
         USING (imdb_key)
         JOIN movie_theaters
         USING (movie_theater_name)
+        LEFT OUTER JOIN ticket_amount
+        USING (screening_id)
         """
             )
-    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
-            for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity in c]
+
+    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": title, "year": production_year, "theater":movie_theater_name, "remainingSeats": (capacity-number_ticket)} for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity, number_ticket in c]
+#    print(found)
     response.status = 200
     return {"data": found}
 
 @post('/tickets')
-def purchase_ticket(): #TODO, Issue: "PurchaseTickets", fixa så att man kan köpa tickets!
-    pass
+def purchase_ticket():
+    user = request.json
+    c = db.cursor()
+    customer_username = ""
+    remaining_tickets = 0
+    c.execute(
+        """
+        SELECT customer_username
+        FROM customers
+        WHERE customer_username = ? AND password = ?
+        """,
+        [user['username'], hash(user['pwd'])]
+            )
+    found = c.fetchone()
+    if not found:
+        #print("Wrong user credentials")
+        response.status = 401
+        return "Wrong user credentials"
+    else:
+        customer_username, = found
+    c.execute(
+        """
+        WITH ticket_amount(screening_id, ticket_number) AS (
+            SELECT screening_id, count() AS ticket_number
+            FROM tickets
+            GROUP BY screening_id
+        )
+            SELECT (capacity - coalesce(ticket_number, 0)) AS remaining_ticket
+            FROM screenings
+            JOIN movie_theaters
+            USING (movie_theater_name)
+            LEFT OUTER JOIN ticket_amount
+            USING (screening_id)
+            WHERE screening_id = ? AND capacity > coalesce(ticket_number, 0)
+        """,
+        [user['performanceId']]
+        )
+
+    found = c.fetchone()
+    if not found:
+        #print("No tickets left")
+        response.status = 400
+        return "No tickets left"
+
+    c.execute(
+        """
+        INSERT
+        INTO tickets(customer_username, screening_id)
+        VALUES (?, ?)
+        """,
+        [customer_username, user['performanceId']]
+        )
+    c.execute(
+        """
+        SELECT ticket_id
+        FROM tickets
+        WHERE rowid = last_insert_rowid() AND screening_id = ?
+        """,
+        [user['performanceId']]
+    )
+
+    found = c.fetchone()
+
+    if found:
+        db.commit()
+        response.status = 201
+        ticket_id, = found
+        return f"/tickets/{ticket_id}"
+    else:
+        #print("ERROR") 
+        response.status = 400
+        return "Error"
+
  
 @get('/users/<username>/tickets')
 def get_user_tickets(username): #TODO, Issue: "Se Users tickets", Just nu fungerar inte denna alls, se till så att denna fungerar och returnerar rätt
