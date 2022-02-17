@@ -30,9 +30,9 @@ MOVIES = [("TheDig", "tt3661210", 2021),
           ("FindingOhana", "tt10332588", 2021)]
 
 
-THEATER_SIZES = {"Kino": 10,
-                 "Regal": 16,
-                 "Skandia": 100}
+THEATER_SIZES = {"Kino": 5,
+                 "Regal": 6,
+                 "Skandia": 10}
 
 
 PERFORMANCES = [("tt3661210", "Regal", "2021-02-22", "19:00"),
@@ -287,7 +287,7 @@ def main():
     check_get_movies()
     # check_get_movies_with_queries()
     check_get_movies_with_ids()
-    check_get_performances(performances)
+   # check_get_performances(performances)
     check_ticket_hoarding()
     print()
     print("==========================================")

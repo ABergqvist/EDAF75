@@ -252,16 +252,20 @@ def get_user_tickets(username): #TODO, Issue: "Se Users tickets", Just nu funger
     c = db.cursor()
     c.execute(
         """
-        SELECT
-        FROM screenings
-        JOIN customer
+        SELECT screening_id, screening_date, screening_time, title, production_year, movie_theater_name, count() as nbr_tickets 
+        FROM tickets
+        JOIN screenings
+        USING (screening_id)
+        JOIN movies
         USING (imdb_key)
-        """
+        GROUP BY customer_username, screening_id
+        HAVING customer_username like ?
+        """, [username]
             )
-    found = [{"performanceId": screening_id,"date": screening_date, "startTime":screening_time, "title": title, "year": production_year, "theater":movie_theater_name, "remainingSeats": capacity} 
-            for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, capacity in c]
+    found = [{"date": screening_date, "startTime":screening_time, "theater":movie_theater_name, "title": title, "year": production_year,  "nbrOfTickets": nbr_of_tickets} 
+            for screening_id, screening_date, screening_time, title, production_year, movie_theater_name, nbr_of_tickets in c]
     response.status = 200
-    return {"data": found}
+    return {"data": found}  
 
 
 run(host='localhost', port=7007)

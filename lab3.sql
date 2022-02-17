@@ -61,10 +61,10 @@ VALUES ('coolusername1234', 'Anna Larsson', 'safepassword123'),
 
 INSERT
 INTO movie_theaters(movie_theater_name, capacity, movie_theater_chain)
-VALUES	('24/7cinema', 46, '24/7'),
-	('disney--', 352, 'internetcinemas') ,
-	('coolcinema', 69, 'internetcinemas'),
-	('thepiratebae', 420, 'sketchybios'),
+VALUES	('24/7cinema', 4, '24/7'),
+	('disney--', 2, 'internetcinemas') ,
+	('coolcinema', 6, 'internetcinemas'),
+	('thepiratebae', 2, 'sketchybios'),
 	('netflix_and_chill_cinema', '112', 'internetcinemas');
 
 INSERT
